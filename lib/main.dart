@@ -102,6 +102,18 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
+  void _nextWeek() {
+    setState(() {
+      _focusedDay = _focusedDay.add(Duration(days: 7));
+    });
+  }
+
+  void _previousWeek() {
+    setState(() {
+      _focusedDay = _focusedDay.subtract(Duration(days: 7));
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -164,51 +176,63 @@ class _CalendarPageState extends State<CalendarPage> {
 
   Widget _buildWeekDates() {
     DateTime startOfWeek = _focusedDay.subtract(Duration(days: _focusedDay.weekday - 1));
-    return Container(
-      height: 80, // 높이를 설정하여 수평 스크롤 가능하게
-      child: SingleChildScrollView(
-        scrollDirection: Axis.horizontal,
-        child: Row(
-          children: List.generate(7, (index) {
-            DateTime date = startOfWeek.add(Duration(days: index));
-            return GestureDetector(
-              onTap: () {
-                setState(() {
-                  _selectedDay = date;
-                  _loadDataForSelectedDay(date);
-                });
-              },
-              child: Container(
-                width: MediaQuery.of(context).size.width / 9, // 각 날짜의 너비를 화면에 맞게 설정
-                padding: EdgeInsets.symmetric(vertical: 10),
-                margin: EdgeInsets.symmetric(horizontal: 5),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: date == _selectedDay ? Colors.blue.withOpacity(0.3) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      "${date.month}/${date.day}", // 월/날짜 형식으로 표시
-                      style: TextStyle(
-                        color: date == _selectedDay ? Colors.blue : Colors.black,
-                        fontWeight: date == _selectedDay ? FontWeight.bold : FontWeight.normal,
-                      ),
-                    ),
-                    SizedBox(height: 5),
-                    Text(
-                      "${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][date.weekday - 1]}",
-                      style: TextStyle(fontSize: 12),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }),
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        IconButton(
+          icon: Icon(Icons.arrow_back),
+          onPressed: _previousWeek,
         ),
-      ),
+        Expanded(
+          child: SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: List.generate(7, (index) {
+                DateTime date = startOfWeek.add(Duration(days: index));
+                return GestureDetector(
+                  onTap: () {
+                    setState(() {
+                      _selectedDay = date;
+                      _loadDataForSelectedDay(date);
+                    });
+                  },
+                  child: Container(
+                    width: MediaQuery.of(context).size.width / 8.5,
+                    padding: EdgeInsets.symmetric(vertical: 10),
+                    margin: EdgeInsets.symmetric(horizontal: 5),
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: date == _selectedDay ? Colors.blue.withOpacity(0.3) : Colors.transparent,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Text(
+                          "${date.month}/${date.day}", // 월/날짜 형식으로 표시
+                          style: TextStyle(
+                            color: date == _selectedDay ? Colors.blue : Colors.black,
+                            fontWeight: date == _selectedDay ? FontWeight.bold : FontWeight.normal,
+                          ),
+                        ),
+                        SizedBox(height: 5),
+                        Text(
+                          "${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][date.weekday - 1]}",
+                          style: TextStyle(fontSize: 12),
+                        ),
+                      ],
+                    ),
+                  ),
+                );
+              }),
+            ),
+          ),
+        ),
+        IconButton(
+          icon: Icon(Icons.arrow_forward),
+          onPressed: _nextWeek,
+        ),
+      ],
     );
   }
 
