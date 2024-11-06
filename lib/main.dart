@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'login.dart'; // 로그인 화면 import
+import 'checklist.dart';
+import 'nutrition.dart';
+import 'static.dart';
+import 'goal.dart';
 
 void main() {
   runApp(MyApp());
@@ -9,7 +14,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: CalendarPage(),
+      home: LoginScreen(), // 처음 화면을 로그인 화면으로 설정
     );
   }
 }
@@ -22,96 +27,218 @@ class CalendarPage extends StatefulWidget {
 class _CalendarPageState extends State<CalendarPage> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
+  int _selectedPageIndex = 0;
+
+  Map<DateTime, Map<String, dynamic>> _dateData = {
+    DateTime.utc(2024, 10, 1): {
+      'checklist': ['운동하기', '영양제 복용'],
+      'nutrition': {'칼로리': 2200, '단백질': 150},
+      'goal': '5km 달리기',
+    },
+    DateTime.utc(2024, 10, 2): {
+      'checklist': ['스트레칭', '물 2L 마시기'],
+      'nutrition': {'칼로리': 1800, '단백질': 130},
+      'goal': '책 30페이지 읽기',
+    },
+  };
+
+  Map<String, dynamic> _currentData = {};
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDataForSelectedDay(_focusedDay);
+  }
+
+  void _loadDataForSelectedDay(DateTime selectedDay) {
+    setState(() {
+      _currentData = _dateData[selectedDay] ?? {
+        'checklist': ['데이터 없음'],
+        'nutrition': {'칼로리': 0, '단백질': 0},
+        'goal': '목표 없음',
+      };
+    });
+  }
+
+  void _showCalendarDialog() {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          child: TableCalendar(
+            focusedDay: _focusedDay,
+            firstDay: DateTime.utc(2020, 1, 1),
+            lastDay: DateTime.utc(2030, 12, 31),
+            selectedDayPredicate: (day) {
+              return isSameDay(_selectedDay, day);
+            },
+            onDaySelected: (selectedDay, focusedDay) {
+              setState(() {
+                _selectedDay = selectedDay;
+                _focusedDay = focusedDay;
+                _loadDataForSelectedDay(selectedDay);
+              });
+              Navigator.pop(context); // 팝업 닫기
+            },
+            calendarFormat: CalendarFormat.month,
+            headerStyle: HeaderStyle(
+              formatButtonVisible: false,
+              titleCentered: true,
+            ),
+            calendarStyle: CalendarStyle(
+              todayDecoration: BoxDecoration(
+                color: Colors.black12,
+                shape: BoxShape.circle,
+              ),
+              selectedDecoration: BoxDecoration(
+                color: Colors.black,
+                shape: BoxShape.circle,
+              ),
+              outsideDaysVisible: false,
+            ),
+          ),
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Flutter Calendar'),
-        backgroundColor: Colors.black,
+        title: Text('Life Style'),
+        backgroundColor: Color(0xffB81736),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.calendar_today),
+            onPressed: _showCalendarDialog,
+          ),
+        ],
       ),
       body: Column(
-        mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          // Container로 감싸서 여백 조정
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 300), // 양쪽 여백 조정
-            child: TableCalendar(
-              firstDay: DateTime.utc(2020, 1, 1),
-              lastDay: DateTime.utc(2030, 12, 31),
-              focusedDay: _focusedDay,
-              selectedDayPredicate: (day) {
-                return isSameDay(_selectedDay, day);
-              },
-              onDaySelected: (selectedDay, focusedDay) {
-                setState(() {
-                  _selectedDay = selectedDay;
-                  _focusedDay = focusedDay; // update `_focusedDay` here as well
-                });
-              },
-              calendarFormat: CalendarFormat.month,
-              headerStyle: HeaderStyle(
-                formatButtonVisible: false,
-                titleCentered: true,
-              ),
-              calendarStyle: CalendarStyle(
-                todayDecoration: BoxDecoration(
-                  color: Colors.black12,
-                  shape: BoxShape.circle,
-                ),
-                selectedDecoration: BoxDecoration(
-                  color: Colors.black,
-                  shape: BoxShape.circle,
-                ),
-                outsideDaysVisible: false,
-              ),
-            ),
-          ),
-          SizedBox(height: 10),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-            child: Column(
+          _buildWeekDates(),
+          Expanded(
+            child: IndexedStack(
+              index: _selectedPageIndex,
               children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildButton(Icons.check_box, '체크리스트'),
-                    SizedBox(width: 20), // 버튼 간의 간격 추가
-                    _buildButton(Icons.notifications, '알람'),
-                  ],
-                ),
-                SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    _buildButton(Icons.link, '영양제'),
-                    SizedBox(width: 20), // 버튼 간의 간격 추가
-                    _buildButton(Icons.bar_chart, '통계'),
-                  ],
-                ),
+                _buildChecklistPage(),
+                _buildNutritionPage(),
+                StaticPage(),
+                _buildGoalPage(),
               ],
             ),
           ),
         ],
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: _selectedPageIndex,
+        onTap: (index) {
+          setState(() {
+            _selectedPageIndex = index;
+          });
+        },
+        items: [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.check_box),
+            label: '체크리스트',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.link),
+            label: '영양제',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.bar_chart),
+            label: '통계',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.flag),
+            label: '목표',
+          ),
+        ],
+        selectedItemColor: Colors.black,
+        unselectedItemColor: Colors.grey,
+      ),
     );
   }
 
-  Widget _buildButton(IconData icon, String label) {
+  Widget _buildWeekDates() {
+    DateTime startOfWeek = _focusedDay.subtract(Duration(days: _focusedDay.weekday - 1));
     return Container(
-      width: 120, // 고정 너비
-      height: 60, // 고정 높이
-      child: ElevatedButton.icon(
-        onPressed: () {
-          // 버튼 클릭 시 동작할 로직 추가
-        },
-        icon: Icon(icon, color: Colors.white),
-        label: Text(label, style: TextStyle(color: Colors.white)),
-        style: ElevatedButton.styleFrom(
-          backgroundColor: Colors.black,
-          padding: EdgeInsets.zero, // 패딩 초기화
+      height: 80, // 높이를 설정하여 수평 스크롤 가능하게
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: List.generate(7, (index) {
+            DateTime date = startOfWeek.add(Duration(days: index));
+            return GestureDetector(
+              onTap: () {
+                setState(() {
+                  _selectedDay = date;
+                  _loadDataForSelectedDay(date);
+                });
+              },
+              child: Container(
+                width: MediaQuery.of(context).size.width / 9, // 각 날짜의 너비를 화면에 맞게 설정
+                padding: EdgeInsets.symmetric(vertical: 10),
+                margin: EdgeInsets.symmetric(horizontal: 5),
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: date == _selectedDay ? Colors.blue.withOpacity(0.3) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      "${date.month}/${date.day}", // 월/날짜 형식으로 표시
+                      style: TextStyle(
+                        color: date == _selectedDay ? Colors.blue : Colors.black,
+                        fontWeight: date == _selectedDay ? FontWeight.bold : FontWeight.normal,
+                      ),
+                    ),
+                    SizedBox(height: 5),
+                    Text(
+                      "${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][date.weekday - 1]}",
+                      style: TextStyle(fontSize: 12),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }),
         ),
       ),
+    );
+  }
+
+  Widget _buildChecklistPage() {
+    List<String> checklist = _currentData['checklist'] ?? ['데이터 없음'];
+    return ListView.builder(
+      itemCount: checklist.length,
+      itemBuilder: (context, index) {
+        return ListTile(
+          title: Text(checklist[index]),
+        );
+      },
+    );
+  }
+
+  Widget _buildNutritionPage() {
+    Map<String, int> nutrition = _currentData['nutrition'] ?? {'칼로리': 0, '단백질': 0};
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        Text('칼로리: ${nutrition['칼로리']} kcal'),
+        Text('단백질: ${nutrition['단백질']} g'),
+      ],
+    );
+  }
+
+  Widget _buildGoalPage() {
+    String goal = _currentData['goal'] ?? '목표 없음';
+    return Center(
+      child: Text('오늘의 목표: $goal'),
     );
   }
 }
