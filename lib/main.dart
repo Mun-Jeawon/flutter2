@@ -43,6 +43,10 @@ class _CalendarPageState extends State<CalendarPage> {
   };
 
   Map<String, dynamic> _currentData = {};
+  //추가
+  final TextEditingController _calorieController = TextEditingController();
+  final TextEditingController _proteinController = TextEditingController();
+
 
   @override
   void initState() {
@@ -57,8 +61,13 @@ class _CalendarPageState extends State<CalendarPage> {
         'nutrition': {'칼로리': 0, '단백질': 0},
         'goal': '목표 없음',
       };
+      //추가
+      // 텍스트 필드에 데이터 반영
+      _calorieController.text = _currentData['nutrition']['칼로리'].toString();
+      _proteinController.text = _currentData['nutrition']['단백질'].toString();
     });
   }
+
 
   void _showCalendarDialog() {
     showDialog(
@@ -113,6 +122,17 @@ class _CalendarPageState extends State<CalendarPage> {
       _focusedDay = _focusedDay.subtract(Duration(days: 7));
     });
   }
+  //추가
+  void _updateNutrition() {
+    setState(() {
+      _currentData['nutrition']['칼로리'] = int.tryParse(_calorieController.text) ?? 0;
+      _currentData['nutrition']['단백질'] = int.tryParse(_proteinController.text) ?? 0;
+
+      // 선택된 날짜의 데이터를 업데이트합니다.
+      _dateData[_selectedDay ?? _focusedDay] = _currentData;
+    });
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -247,17 +267,33 @@ class _CalendarPageState extends State<CalendarPage> {
       },
     );
   }
-
+//수정
   Widget _buildNutritionPage() {
-    Map<String, int> nutrition = _currentData['nutrition'] ?? {'칼로리': 0, '단백질': 0};
-    return Column(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        Text('칼로리: ${nutrition['칼로리']} kcal'),
-        Text('단백질: ${nutrition['단백질']} g'),
-      ],
+    return Padding(
+      padding: const EdgeInsets.all(16.0),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          TextField(
+            controller: _calorieController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(labelText: '칼로리 (kcal)'),
+          ),
+          TextField(
+            controller: _proteinController,
+            keyboardType: TextInputType.number,
+            decoration: InputDecoration(labelText: '단백질 (g)'),
+          ),
+          SizedBox(height: 20),
+          ElevatedButton(
+            onPressed: _updateNutrition,
+            child: Text('저장하기'),
+          ),
+        ],
+      ),
     );
   }
+
 
   Widget _buildGoalPage() {
     String goal = _currentData['goal'] ?? '목표 없음';
