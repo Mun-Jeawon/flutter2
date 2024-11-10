@@ -1,10 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:table_calendar/table_calendar.dart';
-import 'login.dart'; // 로그인 화면 import
-import 'checklist.dart';
-import 'nutrition.dart';
-import 'static.dart';
-import 'goal.dart';
+import 'package:fl_chart/fl_chart.dart'; // 그래프를 위한 패키지 추가
 
 void main() {
   runApp(MyApp());
@@ -14,7 +10,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      home: LoginScreen(), // 처음 화면을 로그인 화면으로 설정
+      home: CalendarPage(),
     );
   }
 }
@@ -43,10 +39,6 @@ class _CalendarPageState extends State<CalendarPage> {
   };
 
   Map<String, dynamic> _currentData = {};
-  //추가
-  final TextEditingController _calorieController = TextEditingController();
-  final TextEditingController _proteinController = TextEditingController();
-
 
   @override
   void initState() {
@@ -61,13 +53,8 @@ class _CalendarPageState extends State<CalendarPage> {
         'nutrition': {'칼로리': 0, '단백질': 0},
         'goal': '목표 없음',
       };
-      //추가
-      // 텍스트 필드에 데이터 반영
-      _calorieController.text = _currentData['nutrition']['칼로리'].toString();
-      _proteinController.text = _currentData['nutrition']['단백질'].toString();
     });
   }
-
 
   void _showCalendarDialog() {
     showDialog(
@@ -111,29 +98,6 @@ class _CalendarPageState extends State<CalendarPage> {
     );
   }
 
-  void _nextWeek() {
-    setState(() {
-      _focusedDay = _focusedDay.add(Duration(days: 7));
-    });
-  }
-
-  void _previousWeek() {
-    setState(() {
-      _focusedDay = _focusedDay.subtract(Duration(days: 7));
-    });
-  }
-  //추가
-  void _updateNutrition() {
-    setState(() {
-      _currentData['nutrition']['칼로리'] = int.tryParse(_calorieController.text) ?? 0;
-      _currentData['nutrition']['단백질'] = int.tryParse(_proteinController.text) ?? 0;
-
-      // 선택된 날짜의 데이터를 업데이트합니다.
-      _dateData[_selectedDay ?? _focusedDay] = _currentData;
-    });
-  }
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -154,10 +118,9 @@ class _CalendarPageState extends State<CalendarPage> {
             child: IndexedStack(
               index: _selectedPageIndex,
               children: [
-                _buildChecklistPage(),
-                _buildNutritionPage(),
-                StaticPage(),
-                _buildGoalPage(),
+                ChecklistPage(),
+                NutritionPage(),
+                StatisticsPage(dateData: _dateData), // 통계 페이지 추가
               ],
             ),
           ),
@@ -183,10 +146,6 @@ class _CalendarPageState extends State<CalendarPage> {
             icon: Icon(Icons.bar_chart),
             label: '통계',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.flag),
-            label: '목표',
-          ),
         ],
         selectedItemColor: Colors.black,
         unselectedItemColor: Colors.grey,
@@ -201,7 +160,9 @@ class _CalendarPageState extends State<CalendarPage> {
       children: [
         IconButton(
           icon: Icon(Icons.arrow_back),
-          onPressed: _previousWeek,
+          onPressed: () => setState(() {
+            _focusedDay = _focusedDay.subtract(Duration(days: 7));
+          }),
         ),
         Expanded(
           child: SingleChildScrollView(
@@ -229,7 +190,7 @@ class _CalendarPageState extends State<CalendarPage> {
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          "${date.month}/${date.day}", // 월/날짜 형식으로 표시
+                          "${date.month}/${date.day}",
                           style: TextStyle(
                             color: date == _selectedDay ? Colors.blue : Colors.black,
                             fontWeight: date == _selectedDay ? FontWeight.bold : FontWeight.normal,
@@ -237,7 +198,7 @@ class _CalendarPageState extends State<CalendarPage> {
                         ),
                         SizedBox(height: 5),
                         Text(
-                          "${["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"][date.weekday - 1]}",
+                          "${["월", "화", "수", "목", "금", "토", "일"][date.weekday - 1]}",
                           style: TextStyle(fontSize: 12),
                         ),
                       ],
@@ -250,55 +211,115 @@ class _CalendarPageState extends State<CalendarPage> {
         ),
         IconButton(
           icon: Icon(Icons.arrow_forward),
-          onPressed: _nextWeek,
+          onPressed: () => setState(() {
+            _focusedDay = _focusedDay.add(Duration(days: 7));
+          }),
         ),
       ],
     );
   }
+}
 
-  Widget _buildChecklistPage() {
-    List<String> checklist = _currentData['checklist'] ?? ['데이터 없음'];
-    return ListView.builder(
-      itemCount: checklist.length,
-      itemBuilder: (context, index) {
-        return ListTile(
-          title: Text(checklist[index]),
-        );
-      },
-    );
+// 할 일 목록 페이지
+class ChecklistPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(child: Text("체크리스트 기능 구현"));
   }
-//수정
-  Widget _buildNutritionPage() {
+}
+
+// 영양소 기록 페이지
+class NutritionPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Center(child: Text("영양소 기능 구현"));
+  }
+}
+
+// 통계 페이지
+class StatisticsPage extends StatelessWidget {
+  final Map<DateTime, Map<String, dynamic>> dateData;
+
+  StatisticsPage({required this.dateData});
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(16.0),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          TextField(
-            controller: _calorieController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(labelText: '칼로리 (kcal)'),
-          ),
-          TextField(
-            controller: _proteinController,
-            keyboardType: TextInputType.number,
-            decoration: InputDecoration(labelText: '단백질 (g)'),
-          ),
-          SizedBox(height: 20),
-          ElevatedButton(
-            onPressed: _updateNutrition,
-            child: Text('저장하기'),
-          ),
+          Text("주 단위 할 일 완료율"),
+          SizedBox(height: 200, child: _buildCompletionChart('weekly')),
+
+          Text("월 단위 할 일 완료율"),
+          SizedBox(height: 200, child: _buildCompletionChart('monthly')),
+
+          Text("영양소 섭취 통계"),
+          SizedBox(height: 200, child: _buildNutrientChart()),
+
+          Text("추천 목표"),
+          _buildGoalRecommendation(),
         ],
       ),
     );
   }
 
+  // 완료율 그래프 생성
+  Widget _buildCompletionChart(String period) {
+    List<PieChartSectionData> sections = [];
+    double completed = 0, total = 0;
 
-  Widget _buildGoalPage() {
-    String goal = _currentData['goal'] ?? '목표 없음';
-    return Center(
-      child: Text('오늘의 목표: $goal'),
+    dateData.forEach((date, data) {
+      if (data['checklist'] != null) {
+        total += (data['checklist'] as List).length;
+        completed += (data['checklist'] as List).where((task) => task == '완료').length;
+      }
+    });
+
+    double completionRate = total > 0 ? (completed / total) * 100 : 0;
+
+    sections.add(PieChartSectionData(value: completionRate, color: Colors.blue, title: "$completionRate%"));
+    sections.add(PieChartSectionData(value: 100 - completionRate, color: Colors.grey, title: ""));
+
+    return PieChart(PieChartData(sections: sections));
+  }
+
+  // 영양소 섭취 그래프 생성
+  Widget _buildNutrientChart() {
+    return BarChart(BarChartData(
+      barGroups: [
+        BarChartGroupData(
+          x: 1,
+          barRods: [BarChartRodData(y: 120, colors: [Colors.blue])], // 예: 섭취량 120g
+        ),
+        BarChartGroupData(
+          x: 2,
+          barRods: [BarChartRodData(y: 80, colors: [Colors.red])], // 예: 목표 대비 부족한 섭취량
+        ),
+      ],
+    ));
+  }
+
+  // 목표 추천 UI
+  Widget _buildGoalRecommendation() {
+    return FutureBuilder<String>(
+      future: _fetchGoalRecommendations(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return CircularProgressIndicator();
+        } else if (snapshot.hasError) {
+          return Text("목표 추천을 가져오는 중 오류 발생");
+        } else {
+          return Text(snapshot.data ?? "추천 목표를 로드할 수 없습니다.");
+        }
+      },
     );
+  }
+
+  // AI 기반 목표 추천 API 호출 (예시)
+  Future<String> _fetchGoalRecommendations() async {
+    // AI API 호출을 통해 목표를 추천 받는 코드 작성
+    return Future.value("운동 목표: 하루에 5000걸음 걷기");
   }
 }
